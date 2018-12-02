@@ -64,6 +64,6 @@ object ActorsIntro extends App {
 
   person ! "hi"
   person ! "Hey"
-  
+
 
 }
