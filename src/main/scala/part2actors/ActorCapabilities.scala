@@ -11,6 +11,7 @@ object ActorCapabilities extends App {
       case number: Int => println(s"[simple actor] received int: $number")
       case SpecialMessage(content) => println(s"[simple actor] received SpecialMessage: $content")
       case SayHelloTo(actorRef) => actorRef ! "Hello"
+      case WirelessPhoneMessage(message, ref) => ref forward message + ":-)"
     }
   }
 
@@ -50,6 +51,13 @@ object ActorCapabilities extends App {
   val jerry = actorSystem.actorOf(Props[SimpleActor], "jerry")
   case class SayHelloTo(ref: ActorRef)
   tom ! SayHelloTo(jerry)
+
+  // 4. Dead letters - when no actor to receive
+  // 5. How actors forward messages
+  //  - sending a message with the ORIGINAL sender.
+  case class WirelessPhoneMessage(message: String, actorRef: ActorRef)
+  tom ! WirelessPhoneMessage("Hello", jerry)
+
 
 
 }
