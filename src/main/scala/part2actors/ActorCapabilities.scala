@@ -1,8 +1,6 @@
 package part2actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import part2actors.ActorCapabilities.BankAccount.{Failure, Statement, Success}
-import part2actors.ActorCapabilities.Counter.{Decr, Incr, Print}
 
 object ActorCapabilities extends App {
 
@@ -51,7 +49,6 @@ object ActorCapabilities extends App {
 
   //3. How actors can REPLY to the messages
 
-
   val tom = actorSystem.actorOf(Props[SimpleActor], "tom")
   val jerry = actorSystem.actorOf(Props[SimpleActor], "jerry")
   case class SayHelloTo(ref: ActorRef)
@@ -93,6 +90,8 @@ object ActorCapabilities extends App {
 
   }
   class Counter extends Actor {
+    import Counter._
+
     var count = 0
     def receive: Receive = {
       case Incr => count += 1
@@ -100,42 +99,61 @@ object ActorCapabilities extends App {
       case Print => println("[counter]: " + count)
     }
   }
-  val counter = actorSystem.actorOf(Props[Counter], "counter")
+  import Counter._
+  val counter = actorSystem.actorOf(Props[Counter], "counter01")
   (1 to 5).foreach(_ => counter ! Incr)
   counter ! Decr
   counter ! Print
 
 
   // Bank account
-  case class Deposit(amount: Double)
-  case class Withdraw(amount: Double)
   object BankAccount {
+    case class Deposit(amount: Double)
+    case class Withdraw(amount: Double)
     case object Statement
-    case object Success
-    case object Failure
+    case class Success(msg: String)
+    case class Failure(msg: String)
   }
   class BankAccount extends Actor {
+    import BankAccount._
     var balance: Double = 0
+
     def receive: Receive = {
       case Deposit(amount) =>
         if (amount > 0) {
           balance += amount
-          context.sender() ! Success
-        } else context.sender() ! Failure
+          sender ! Success(s"Successfully add $amount")
+        } else sender ! Failure("Invalid fund")
       case Withdraw(amount) =>
-        if (amount <= balance) {
+        if (amount <= balance && amount > 0) {
           balance -= amount
-          context.sender() ! Success
-        } else context.sender() ! Failure
-      case Statement => println("[bankAccount balance]: " + balance)
+          sender ! Success(s"Successfully withdrew $amount")
+        } else context.sender() ! Failure("Invalid fund")
+      case Statement => sender ! "[bankAccount balance]: " + balance
     }
   }
 
-  val account = actorSystem.actorOf(Props[BankAccount], "bankAccount")
-  account ! Deposit(500)
-  account ! Withdraw(600)
-  account ! Withdraw(60)
-  account ! Statement
+  object AccountHolder {
+    case class Starter(bankAccount: ActorRef)
+  }
 
+  class AccountHolder extends Actor {
+    import BankAccount._
+    import AccountHolder._
+
+    def receive: Receive = {
+      case Starter(bankAccount: ActorRef) =>
+        bankAccount ! Deposit(500)
+        bankAccount ! Withdraw(600)
+        bankAccount ! Withdraw(60)
+        bankAccount ! Statement
+      case anything => println(anything)
+    }
+  }
+  import AccountHolder._
+
+  val account = actorSystem.actorOf(Props[BankAccount], "bankAccount01")
+  val accountHolder = actorSystem.actorOf(Props[AccountHolder], "accHolder01")
+  accountHolder ! Starter(account)
 
 }
