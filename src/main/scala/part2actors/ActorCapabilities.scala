@@ -156,4 +156,15 @@ object ActorCapabilities extends App {
   val accountHolder = actorSystem.actorOf(Props[AccountHolder], "accHolder01")
   accountHolder ! Starter(account)
 
+  /* Questions:
+    1. How can we guarantee that the Print message is coming last since everything is async
+        (1 to 5).foreach(_ => counter ! Incr)
+        counter ! Decr
+        counter ! Print
+    2. Why we are adding side-effect to our Actor classes?
+    3. Where is synchronisation primitives since it'll run in multi-threaded env?
+
+  */
+  Thread.sleep(1500)
+  actorSystem.terminate
 }
