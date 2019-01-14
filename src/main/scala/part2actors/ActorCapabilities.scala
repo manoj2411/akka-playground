@@ -163,7 +163,28 @@ object ActorCapabilities extends App {
         counter ! Print
     2. Why we are adding side-effect to our Actor classes?
     3. Where is synchronisation primitives since it'll run in multi-threaded env?
+    * Since akka messages are async/non-blocking, can we assume any ordering of messages?
+    * If I send 2 messages to an actor are they competing for Actor's internal state(race condition)?
+    * What does asynchronous means?
+    * How does this all works since akka runs on JVM which knows only about Threads?
 
+    Flow:
+    - Actor has a receive Handler and some messages, queued into its mailbox.
+    - So if you want to send a message to this actor, this is as simple as including another message into the actor's mailbox.
+      - This is thread safe and it's being done by Akka behind the scenes
+    - Now processing a message is more interesting since an actor is just a data structure. It needs a thread to actually execute any code
+    - So at some point a thread will take control of this actor and it will start dequeing messages from the actor's mailbox and for every one of those messages it will invoke the message handler.
+    - And as a result the actor might change his state or send messages to other actors.
+    - And after that the message is simply discarded.
+    - And this whole process happens a bunch of times.
+
+    This whole process offers us some guarantees,
+      1. Only 1 thread will operate on a actor at one time, which makes actors single threaded
+        - that means we don't need to do any synchronization & locking, since only 1 thread has access to actor's internal state at any point of time
+        - Thread will never leave the actor in the middle of processing message, makes message processing atomic
+      2. Message delivery guarantees.
+        - At most once delivery guarantee, receiving actor receives at most once, msgs never enqueued duplicates
+        - For any sender-receiver pair, the message order is kept
   */
   Thread.sleep(1500)
   actorSystem.terminate
