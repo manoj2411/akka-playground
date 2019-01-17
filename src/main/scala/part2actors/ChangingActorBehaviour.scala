@@ -77,5 +77,71 @@ object ChangingActorBehaviour extends App {
   val statelessFussyKid = actorSystem.actorOf(Props[StatelessFussyKid], "statelessFussyKid")
   mom ! Starter(statelessFussyKid )
 
+  /* become: Its a method for replacing the current message handler with the new message handler
+      - this new handler will be used for all future messages
+    become(sadReceive, false) will add sadReceive handler to the handler stack that it maintains
+    context.unbecome will be used to pop the handler from stack
+  */
+
+  /* Exercises
+    1. recreate counter actor with context.become with NO MUTABLE STATE
+    2. Simplified voting system. We have 2 kind of actors,
+  */
+
+  // =========================== Exercise 1
+  object Counter {
+    case object Incr
+    case object Decr
+    case object Print
+
+  }
+  class Counter extends Actor {
+    import Counter._
+
+    def receive: Receive = counterReceive(0)
+
+    def counterReceive(currentCount: Int): Receive = {
+      case Incr => context.become(counterReceive(currentCount + 1))
+      case Decr => context.become(counterReceive(currentCount - 1))
+      case Print => println(s"[counter]: $currentCount")
+    }
+  }
+  import Counter._
+  val counter = actorSystem.actorOf(Props[Counter], "counter01")
+  (1 to 5).foreach(_ => counter ! Incr)
+  counter ! Decr
+  counter ! Print
+
+
+  // =========================== Exercise 2
+  class Citizen extends Actor {
+    override def receive: Receive = ???
+  }
+  case class Vote(candidate: String)
+  // Citizen will turn himself into having voted state with a candidate
+  // VoteAggregator will send msgs to Citizen asking who they have voted for
+  case class AggregateVotes(citizens: Set[ActorRef])
+  case object VoteStatusRequest
+  case class VoteStatusReply(candidate: Option[String])
+  class VoteAggregator extends Actor {
+    override def receive: Receive = ???
+  }
+  //val tom = actorSystem.actorOf(Props[Citizen])
+  //val jerry = actorSystem.actorOf(Props[Citizen])
+  //val bob = actorSystem.actorOf(Props[Citizen])
+  //val alice = actorSystem.actorOf(Props[Citizen])
+  //tom ! Vote("Martin")
+  //jerry ! Vote("Jonas")
+  //bob ! Vote("Roland")
+  //alice ! Vote("Martin")
+  //val voteAggregator = actorSystem.actorOf(Props[VoteAggregator])
+  //voteAggregator ! AggregateVotes(Set(tom, jerry, bob, alice))
+  /* As result print =>
+      Martin  -> 2
+      Jonas   -> 1
+      Roland  -> 1
+  */
+
   Thread.sleep(1500)
+  actorSystem.terminate()
 }
