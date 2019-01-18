@@ -6,7 +6,7 @@ import part2actors.ChangingActorBehaviour.Mom.Starter
 object ChangingActorBehaviour extends App {
   /*
     Problem: We like to change our Actor behaviour with time, currently the only way is to keeping track the current state and do if/else in handler with that state.
-    Scenario: We have 2 actors, Mother & Kid. Mother feeds her kid and kid changes his state depending on the food he gets. If he gets veggies the becomes sad, if he gets chocoate then he becomes Happy.
+    Scenario: We have 2 actors, Mother & Kid. Mother feeds her kid and kid changes his state depending on the food he gets. If he gets veggies the becomes sad, if he gets chocolate then he becomes Happy.
   */
 
   object FussyKid {
