@@ -143,7 +143,7 @@ object ChangingActorBehaviour extends App {
         context.become(awaitingStatuses(citizens, Map()))
     }
 
-    def awaitingStatuses(stillWaiting: Set[ActorRef],currResults: Map[String, Int]): Receive = {
+    def awaitingStatuses(stillWaiting: Set[ActorRef], currResults: Map[String, Int]): Receive = {
       case VoteStatusReply(candidate) =>
         candidate match {
           case Some(candidateName) =>
