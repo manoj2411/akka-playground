@@ -1,0 +1,7 @@
+{
+  "appName": "demo app",
+  "akka": {
+    "loglevel": "Debug",
+    "concurrency": 12
+  }
+}
