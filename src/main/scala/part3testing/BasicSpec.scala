@@ -69,6 +69,22 @@ class BasicSpec extends TestKit(ActorSystem("basicSpec"))
       labActor ! "favTech"
       expectMsgAllOf("Scala", "Akka")
     }
+
+    "reply with fav tech in different way" in {
+      labActor ! "favTech"
+      val messages = receiveN(2) // returns Seq[Any]
+      // Do complicated assertions
+      assert(messages.length == 2)
+    }
+
+    "reply with fav tech in fancy way" in {
+      labActor ! "favTech"
+      // This is very powerful.
+      expectMsgPF() {
+        case "Scala" => // only care that the PF is defined for the messages that we care about
+        case "Akka" =>
+      }
+    }
   }
 }
 
