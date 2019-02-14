@@ -16,7 +16,7 @@ class TimedAssertionsSpec extends TestKit(ActorSystem("TimedAssertionsSpec"))
   import TimedAssertionsSpec._
 
   "A worker actor" should {
-    val workerActor = system.actorOf(Props[WorkerAcoter])
+    val workerActor = system.actorOf(Props[WorkerActor])
     "reply in timely manner" in {
       within(500 millis, 1 second) {
         workerActor ! "work"
@@ -41,7 +41,7 @@ class TimedAssertionsSpec extends TestKit(ActorSystem("TimedAssertionsSpec"))
 object TimedAssertionsSpec {
   case class WorkResult(result: Int)
 
-  class WorkerAcoter extends Actor {
+  class WorkerActor extends Actor {
     def receive: Receive = {
       case "work" =>
         // long computation
