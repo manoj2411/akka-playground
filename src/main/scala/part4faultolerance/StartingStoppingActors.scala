@@ -1,6 +1,6 @@
 package part4faultolerance
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Kill, PoisonPill, Props}
 
 object StartingStoppingActors extends App  {
 
@@ -40,6 +40,7 @@ object StartingStoppingActors extends App  {
     }
   }
 
+  // 1. Stopped actors using context.stop
   import Parent._
   val parentActor = actorSystem.actorOf(Props[Parent], "parent")
   parentActor ! StartChild("firstChild")
@@ -50,6 +51,20 @@ object StartingStoppingActors extends App  {
   parentActor ! StopChild("firstChild")
   parentActor ! Stop
 
+  // 2. Stopping actors using special messages:
+  // PoisonPill & Kill
+  val child2 = actorSystem.actorOf(Props[Child])
+  child2 ! "You are getting Poisoned!"
+  child2 ! PoisonPill
+  child2 ! "Still alive?"
+
+  val child3 = actorSystem.actorOf(Props[Child])
+  child3 ! "killing you!"
+  child3 ! Kill
+  child2 ! "Still alive?"
+
+
   Thread.sleep(1000)
   actorSystem.terminate
+
 }
