@@ -28,7 +28,9 @@ object StartingStoppingActors extends App  {
         // context.stop is a non blocking method. It just gives a signal to stop child which
         // will take some time and stop it sometime later.
         childOption.foreach { childRef => context.stop(childRef)}
-        context.become(withChildren(children - name))
+      case Stop =>
+        log.info("stopping itself")
+        context.stop(self) // this also stops all its childActors
     }
   }
 
@@ -41,10 +43,12 @@ object StartingStoppingActors extends App  {
   import Parent._
   val parentActor = actorSystem.actorOf(Props[Parent], "parent")
   parentActor ! StartChild("firstChild")
+  parentActor ! StartChild("secondChild")
   val child1 = actorSystem.actorSelection("/user/parent/firstChild")
   child1 ! "Hey kido!"
 
   parentActor ! StopChild("firstChild")
+  parentActor ! Stop
 
   Thread.sleep(1000)
   actorSystem.terminate
