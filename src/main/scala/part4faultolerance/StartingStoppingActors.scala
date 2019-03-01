@@ -1,6 +1,6 @@
 package part4faultolerance
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Kill, PoisonPill, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Kill, PoisonPill, Props, Terminated}
 
 object StartingStoppingActors extends App  {
 
@@ -42,26 +42,48 @@ object StartingStoppingActors extends App  {
 
   // 1. Stopped actors using context.stop
   import Parent._
-  val parentActor = actorSystem.actorOf(Props[Parent], "parent")
-  parentActor ! StartChild("firstChild")
-  parentActor ! StartChild("secondChild")
-  val child1 = actorSystem.actorSelection("/user/parent/firstChild")
-  child1 ! "Hey kido!"
+//  val parentActor = actorSystem.actorOf(Props[Parent], "parent")
+//  parentActor ! StartChild("firstChild")
+//  parentActor ! StartChild("secondChild")
+//  val child1 = actorSystem.actorSelection("/user/parent/firstChild")
+//  child1 ! "Hey kido!"
+//
+//  parentActor ! StopChild("firstChild")
+//  parentActor ! Stop
+//
+//  // 2. Stopping actors using special messages:
+//  // PoisonPill & Kill
+//  val child2 = actorSystem.actorOf(Props[Child])
+//  child2 ! "You are getting Poisoned!"
+//  child2 ! PoisonPill
+//  child2 ! "Still alive?"
+//
+//  val child3 = actorSystem.actorOf(Props[Child])
+//  child3 ! "killing you!"
+//  child3 ! Kill
+//  child2 ! "Still alive?"
 
-  parentActor ! StopChild("firstChild")
-  parentActor ! Stop
+  // 3. Death watch: get notified when an Actor dies
+  class Watcher extends Actor with ActorLogging {
+    import Parent._
 
-  // 2. Stopping actors using special messages:
-  // PoisonPill & Kill
-  val child2 = actorSystem.actorOf(Props[Child])
-  child2 ! "You are getting Poisoned!"
-  child2 ! PoisonPill
-  child2 ! "Still alive?"
+    def receive: Receive = {
+      case StartChild(name) =>
+        val child = context.actorOf(Props[Child], name)
+        log.info(s"watching actor $name")
+        // register THIS actor for the death of Child, will receive Terminated msg
+        context.watch(child)
+        //context.unwatch(): used to unwatch the actor when you are no more interested.
+      case Terminated(actorRef) =>
+        log.info(s"Watched actor is terminated: $actorRef")
+    }
+  }
 
-  val child3 = actorSystem.actorOf(Props[Child])
-  child3 ! "killing you!"
-  child3 ! Kill
-  child2 ! "Still alive?"
+  val watcher = actorSystem.actorOf(Props[Watcher], "watcher")
+  watcher ! StartChild("watchedChild")
+  Thread.sleep(200)
+  val watchedChild = actorSystem.actorSelection("/user/watcher/watchedChild")
+  watchedChild ! PoisonPill
 
 
   Thread.sleep(1000)
