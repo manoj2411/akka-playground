@@ -17,7 +17,40 @@ object ActorLifeCycle extends App {
   }
 
   val actorSystem = ActorSystem("LifeCycleDemo")
-  val parent = actorSystem.actorOf(Props[LifeCycleActor], "parent")
-  parent ! StartChild
-  parent ! PoisonPill
+//  val parent = actorSystem.actorOf(Props[LifeCycleActor], "parent")
+//  parent ! StartChild
+//  parent ! PoisonPill
+
+  /*
+  * Restarting hooks
+  */
+  case object Fail
+  case object FailChild
+  class Parent extends Actor {
+    private var child = context.actorOf(Props[Child], "child")
+
+    def receive: Receive = {
+      case FailChild => child ! Fail
+    }
+  }
+
+  class Child extends Actor with ActorLogging {
+    override def preStart(): Unit = log.info(s"I am going to start - ${self} - ${this}")
+    override def postStop(): Unit = log.info(s"I have stopped - ${self} - ${this}")
+
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit =
+      log.info(s"child restarting because of: ${reason.getMessage} - ${self} - ${this}")
+    override def postRestart(reason: Throwable): Unit =
+      log.info(s"child restarted - ${self} - ${this}")
+
+    def receive: Receive = {
+      case Fail =>
+        log.warning("I am going to Fail")
+        throw new RuntimeException("random failing!")
+    }
+  }
+
+  val parent = actorSystem.actorOf(Props[Parent], "parent")
+  parent ! FailChild
+
 }
