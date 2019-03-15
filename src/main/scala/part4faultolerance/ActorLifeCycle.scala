@@ -53,4 +53,9 @@ object ActorLifeCycle extends App {
   val parent = actorSystem.actorOf(Props[Parent], "parent")
   parent ! FailChild
 
+  /* Q. Why after throwing exception actor restarted and started working again?
+     A. Its a part of default supervision strategy which says if an actor threw an exception
+     while processing a message, that message will removed from the queue(mail box) and
+     the actor is restarted.
+  */
 }
