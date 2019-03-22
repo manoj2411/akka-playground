@@ -1,0 +1,2 @@
+Akka is good
+Learning scala as well!
