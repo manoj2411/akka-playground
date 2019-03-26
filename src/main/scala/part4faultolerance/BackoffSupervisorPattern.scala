@@ -45,9 +45,41 @@ object BackoffSupervisorPattern extends App {
           between the attempts to rerun a supervision strategy.
   */
 
-  val backoffSupervisor = system.actorOf(supervisorProps, "supervisor")
-  backoffSupervisor ! ReadFile
+  // val backoffSupervisor = system.actorOf(supervisorProps, "supervisor")
+  // backoffSupervisor ! ReadFile
 
+  class EagerFilerPersistentActor extends FilePersistentActor {
+    override def preStart(): Unit = {
+      log.info("Eager actor starting")
+      sourceFile = Source.fromFile(new File("src/main/resources/testfiles/invalid_file.txt"))
+    }
+  }
+  //val eagerActor = system.actorOf(Props[EagerFilerPersistentActor], "eager01")
+  // => It'll throw ActorInitializationException and the strategy is STOP
+
+
+  // Instead of creating eagerActor directly lets create it with supervisor.
+  // we want this Backoff to kick in when the actor is STOPPED.
+
+  val newSupervisorProps = BackoffSupervisor.props(
+    // this Backoff will kick in when the actor is STOPPED.
+    Backoff.onStop(Props[EagerFilerPersistentActor], "eager02", 1 second, 24 second, 0.2)
+  )
+
+  val newSupervisor = system.actorOf(newSupervisorProps, "eagerSupervisor")
+  // This will create "eagerSupervisor" and child "eager02" actor.
+  // This child will die on initialization, supervision strategy will kick in and trigger Backoff.
+  // It'll attempts the restart of "eager02" actor exponentially.
+
+  /*
+  - The simulation of what would happen in real life when you want to connect to an external data
+  source like a database or network connection that might suddenly go down and cause your actress
+  to fail with some kind of exception.
+  - If that happens you don't want your actors to connect to that data source immediately because
+  it might need time to recover and when it does recover you don't want your actress to suddenly
+  start connecting all at once to your data source because it might bring it back down.
+  - Which is why we implemented this back office supervisor pattern.
+  */
   Thread.sleep(10000)
   system.terminate
 }
