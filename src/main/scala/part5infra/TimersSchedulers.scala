@@ -20,12 +20,21 @@ object TimersSchedulers extends App {
   val simpleActor = system.actorOf(Props[SimpleActor])
 
   system.log.info("Scheduling reminder!")
+  import system.dispatcher
 
   system.scheduler.scheduleOnce(1 second) {
     simpleActor ! "gentle reminder!"
-  }(system.dispatcher) // Scheduling of code has to happen on some threat much like futures. So we need an execution context.
+  } // Scheduling of code has to happen on some threat much like futures. So we need an execution context.
 
 
-  Thread.sleep(2000)
+  // Scheduling a repeating message
+  val repeating = system.scheduler.schedule(1 second, 2 seconds) {
+    simpleActor ! "heartbeat"
+  }
+
+  Thread.sleep(5000)
+  repeating.cancel()
+
+  //Thread.sleep(2000)
   system.terminate
 }
