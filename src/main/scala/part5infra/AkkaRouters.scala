@@ -1,7 +1,7 @@
 package part5infra
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Terminated}
-import akka.routing.{ActorRefRoutee, RoundRobinRoutingLogic, Router}
+import akka.routing.{ActorRefRoutee, RoundRobinPool, RoundRobinRoutingLogic, Router}
 
 object AkkaRouters extends App {
   /*
@@ -17,6 +17,15 @@ object AkkaRouters extends App {
       ActorRefRoutee(slaveRef)
     }
 
+    /* Akka supported options for routing logic:
+        * round-robin
+        * random
+        * smallest mailbox
+        * broadcast
+        * scatter-gather-first
+        * tail-chopping
+        * consistent hashing
+    * */
     // STEP 2: create router
     private var router = Router(RoundRobinRoutingLogic(), slaves)
 
@@ -40,11 +49,17 @@ object AkkaRouters extends App {
   }
 
   val actorSystem = ActorSystem("routersDemo")
-  val master = actorSystem.actorOf(Props[Master], "master")
-  for (i <- (1 to 10)) {
-    master ! s"message no $i"
-  }
+//  val master = actorSystem.actorOf(Props[Master], "master")
+//  for (i <- (1 to 10)) {
+//    master ! s"message no $i"
+//  }
 
+
+  /* Pool Router: Simpler method for creating a router actor with its own child */
+  val poolMaster = actorSystem.actorOf(RoundRobinPool(5).props(Props[Slave]), "aPoolMaster")
+  for ( i <- (1 to 10)) {
+    poolMaster ! s"message no $i"
+  }
 
   Thread.sleep(1000)
   actorSystem.terminate()
