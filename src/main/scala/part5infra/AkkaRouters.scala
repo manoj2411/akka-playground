@@ -1,7 +1,8 @@
 package part5infra
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Terminated}
-import akka.routing.{ActorRefRoutee, RoundRobinPool, RoundRobinRoutingLogic, Router}
+import akka.routing._
+import com.typesafe.config.ConfigFactory
 
 object AkkaRouters extends App {
   /*
@@ -48,7 +49,7 @@ object AkkaRouters extends App {
     }
   }
 
-  val actorSystem = ActorSystem("routersDemo")
+  val actorSystem = ActorSystem("routersDemo", ConfigFactory.load().getConfig("routersDemo"))
 //  val master = actorSystem.actorOf(Props[Master], "master")
 //  for (i <- (1 to 10)) {
 //    master ! s"message no $i"
@@ -56,9 +57,16 @@ object AkkaRouters extends App {
 
 
   /* Pool Router: Simpler method for creating a router actor with its own child */
-  val poolMaster = actorSystem.actorOf(RoundRobinPool(5).props(Props[Slave]), "aPoolMaster")
+//  val poolMaster = actorSystem.actorOf(RoundRobinPool(5).props(Props[Slave]), "aPoolMaster")
+//  for ( i <- (1 to 10)) {
+//    poolMaster ! s"message no $i"
+//  }
+  /* Creating pool master router using config
+      - name must be exact same as the 1 written in config
+  */
+  val poolMaster2 = actorSystem.actorOf(FromConfig.props(Props[Slave]), "poolMaster2")
   for ( i <- (1 to 10)) {
-    poolMaster ! s"message no $i"
+    poolMaster2 ! s"message no $i"
   }
 
   Thread.sleep(1000)
