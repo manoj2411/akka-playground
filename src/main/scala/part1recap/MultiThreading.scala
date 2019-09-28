@@ -41,7 +41,7 @@ object MultiThreading extends App {
       a. Send other signals like run this every n secs
       b. Multiple bg tasks, how to identify which thread gets which task
       c. From running thread how you identify who gave you the signal
-      d. What is the bg thread stuck or throw exception or crash
+      d. What if the bg thread stuck or throw exception or crash
     We need a Data Structure
       a. can safely receive any kind of signal/message
       b. can identify who gave that signal
@@ -57,8 +57,6 @@ object MultiThreading extends App {
      - it happens by sending messages to them, asynchronously
      - **Actors are objects which we can't access directly but can only send messages**
      -
-
-
   */
 
 
