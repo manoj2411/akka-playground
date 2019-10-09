@@ -2,6 +2,7 @@ package part2actors
 
 import akka.actor.{Actor, ActorSystem, Props}
 
+// ### 2.1
 object ActorsIntro extends App {
 
   // Part 1 - Actor systems
@@ -60,7 +61,11 @@ object ActorsIntro extends App {
     }
   }
   val person = actorSystem.actorOf(Props(new Person("Tom")))
-  // This is not a good practice. Instead create a companion object and a method props which returns the object
+  // This is not a good practice. Instead create a companion object
+  // and a method props which returns the object
+  object Person {
+    def props(name: String) = Props(new Person(name))
+  }
 
   person ! "hi"
   person ! "Hey"

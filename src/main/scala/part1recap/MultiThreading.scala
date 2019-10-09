@@ -1,5 +1,9 @@
 package part1recap
 
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
+
+// 2.
 object MultiThreading extends App {
 
   val aThread = new Thread(new Runnable {
@@ -9,29 +13,54 @@ object MultiThreading extends App {
   val anotherThread = new Thread(() => println("From another thread"))
   aThread.start
   anotherThread.start
-  anotherThread.join
+  anotherThread.join // waits for thread to finish
   aThread.join
 
   /*
-    We can do lot of parallel work with threads but they are unpredictable
+    We can do lot of parallel work with threads but they are **unpredictable**
+   */
+  class BankAccount(private var amount: Int) {
+    def withdraw(money: Int) = this.amount -= money
+    def safeWithdraw(money: Int) = this.synchronized {
+      this.amount -= money
+    }
+  }
+  /* BankAccount(500)
+
+    T1 -> withdraw(100)
+    T2 -> withdraw(200)
+
     - Standard failures (example) can be 2 withdraw transactions on a account bcz
         this.amount = this.amount - 1000 is NOT ATOMIC
-    - Standard solutions is by adding Synchronise blocks. This soln becomes difficult in big apps
-   Inter-thread communication on JVM via wait-notify mechanism.
 
-   Scala Futures
+    - Standard solutions is by adding Synchronise blocks. This soln becomes difficult in big apps
+
+    - Another solution is to add @volatile on the private member like:
+        BankAccount(@volatile private var amount: Int)
+      - Its locks both reads and writes of this member
+      - But only works with primitive types.
+
+    - Inter-thread communication on JVM
+        done via wait-notify mechanism.
+   */
+
+  /* Scala Futures
     - will be evaluated on different thread.
     - Futures comes with Callbacks like onComplete
-      future.onComplete {
-        case Success(42) => println("life is awesome")
-        case Failure(_) => println("Something happened to life")
-      }
-    - Future supports - map, flatMap, filter etc. andThen, recoverWith
+   */
+  import scala.concurrent.ExecutionContext.Implicits.global
+  val future = Future { 42 }
+  future.onComplete {
+    case Success(42) => println("life is awesome")
+    case Failure(_) => println("Something happened to life")
+  }
+  // FP: Future is monadic construct, it has functional primitives
+  // Future supports - map, flatMap, filter, for comprehension etc.  andThen, recover/recoverWith
 
-  -------------------------------------
 
-  1. OOP encapsulation is only valid in single threaded env
-      a. synchronization & locks will solve it but can result in deadlock, livelock etc
+  /* Problems with existing multi-threading model
+  1. OOP encapsulation is only valid in single threaded env (Video #6 for examples)
+      a. synchronization & locks will solve it but can result in deadlock, livelock etc and they are slow.
     We need a DataStructure which is:
       a. Fully encapsulated in multi threaded env / distributed env
       b. with no locks
@@ -47,7 +76,7 @@ object MultiThreading extends App {
       b. can identify who gave that signal
       c. is itself easily identifiable
       d. can guard against failure
-   3. Tracking and dealing with errors in multi threaded(distributed) env is PITA
+   3. Tracking and dealing with errors in multi threaded(distributed) env is PainInTheA
 
    ----
 
@@ -59,5 +88,16 @@ object MultiThreading extends App {
      -
   */
 
+  // 1M numbers b/w 10 threads
+  val futures = (0 to 9)
+    .map(i => 100000 * i to 100000 * (i + 1))
+    .map(range => Future {
+      if (range.contains(241234)) throw new RuntimeException("random error")
+      range.sum
+    })
 
+  val sumFuture = Future.reduceLeft(futures)(_ + _)
+
+  sumFuture.onComplete(println)
+  Thread.sleep(1000)
 }
