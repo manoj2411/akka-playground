@@ -2,6 +2,7 @@ package part2actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 
+// ### 2.2
 object ActorCapabilities extends App {
 
   class SimpleActor extends Actor {
@@ -143,11 +144,14 @@ object ActorCapabilities extends App {
 
     def receive: Receive = {
       case Starter(bankAccount: ActorRef) =>
+        bankAccount ! Deposit(-100)
+        bankAccount ! Withdraw(200)
+        bankAccount ! Statement
         bankAccount ! Deposit(500)
         bankAccount ! Withdraw(600)
-        bankAccount ! Withdraw(60)
+        bankAccount ! Withdraw(100)
         bankAccount ! Statement
-      case anything => println(anything)
+      case anyMessage => println(anyMessage)
     }
   }
   import AccountHolder._

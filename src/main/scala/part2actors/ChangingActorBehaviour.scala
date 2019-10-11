@@ -3,10 +3,14 @@ package part2actors
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import part2actors.ChangingActorBehaviour.Mom.Starter
 
+// ### 2.3
 object ChangingActorBehaviour extends App {
   /*
-    Problem: We like to change our Actor behaviour with time, currently the only way is to keeping track the current state and do if/else in handler with that state.
-    Scenario: We have 2 actors, Mother & Kid. Mother feeds her kid and kid changes his state depending on the food he gets. If he gets veggies the becomes sad, if he gets chocolate then he becomes Happy.
+    Problem: We like to change our Actor behaviour with time, currently the only way is to keeping
+      track the current state and do if/else in handler with that state.
+    Scenario: We have 2 actors, Mother & Kid. Mother feeds her kid and kid changes his
+      state depending on the food he gets. If he gets veggies the becomes sad,
+      if he gets chocolate then he becomes Happy.
   */
 
   object FussyKid {
@@ -124,7 +128,7 @@ object ChangingActorBehaviour extends App {
 
     def voteReceive(candidate: String): Receive = {
       case VoteStatusRequest => sender ! VoteStatusReply(Some(candidate))
-      case Vote(newCandidate) => context.become(voteReceive(newCandidate))
+      case Vote(newCandidate) => context.become(voteReceive(newCandidate)) // allowing change
     }
   }
   case class Vote(candidate: String)
@@ -144,19 +148,17 @@ object ChangingActorBehaviour extends App {
     }
 
     def awaitingStatuses(stillWaiting: Set[ActorRef], currResults: Map[String, Int]): Receive = {
-      case VoteStatusReply(candidate) =>
-        candidate match {
-          case Some(candidateName) =>
-            val newStillWaiting = stillWaiting - context.sender
-            val candidateVotes = currResults.getOrElse(candidateName, 0) + 1
-            val newCurrResults = currResults + (candidateName -> candidateVotes)
-            if (newStillWaiting.nonEmpty)
-              context.become(awaitingStatuses(newStillWaiting, newCurrResults))
-            else
-              println("Result: " + newCurrResults)
-          case None =>
-        }
+      case VoteStatusReply(Some(candidate)) =>
+        val newStillWaiting = stillWaiting - context.sender
+        val candidateVotes = currResults.getOrElse(candidate, 0) + 1
+        val newCurrResults = currResults + (candidate -> candidateVotes)
+        if (newStillWaiting.nonEmpty)
+          context.become(awaitingStatuses(newStillWaiting, newCurrResults))
+        else
+          println("Result: " + newCurrResults)
+      case VoteStatusReply(None) => // don't do anything
     }
+
   }
 
   val tom = actorSystem.actorOf(Props[Citizen])
