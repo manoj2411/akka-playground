@@ -2,6 +2,7 @@ package part2actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 
+// ### 2.4
 object ChildActors extends App {
 
   /* ## Child creation
@@ -30,13 +31,14 @@ object ChildActors extends App {
 
   /* Exercise: Distributed word counting
      - Use akka parallelism and distribute the work tasks to a number of actors.
-     - Crate a small actor hierarchy where a number of actors will be workers and there will be master actor that manages them. Its a task that will take some time and easily parallelizable.
+     - Crate a small actor hierarchy where a number of actors will be workers and there will be
+        master actor that manages them. Its a task that will take some time and easily parallelizable.
   */
 
   object WordCountMaster {
     case class Initialize(vChildren: Int)
-    case class WordCountTask(text: String, sourceSender: ActorRef)
-    case class WordCountReply(count: Int, sourceSender: ActorRef)
+    case class WordCountTask(id: Int, text: String)
+    case class WordCountReply(id: Int, count: Int)
   }
 
   class WordCountMaster extends Actor {
@@ -47,14 +49,24 @@ object ChildActors extends App {
       case Initialize(nchildren) =>
         val children = for (i <- 1 to nchildren) yield
           context.actorOf(Props[WordCountWorker], s"childWorker_$i")
-        context.become(withChildren(children))
+        context.become(withChildren(children, 0, 1, Map()))
     }
 
-    def withChildren(children: Seq[ActorRef], currWorker: Int = 0): Receive = {
+    def withChildren(children: Seq[ActorRef], currWorker: Int, currId: Int, senderMap: Map[Int, ActorRef]): Receive = {
       case text: String =>
-        children(currWorker) ! WordCountTask(text, context.sender)
-        context.become(withChildren(children, (currWorker + 1) % children.length))
-      case WordCountReply(count, sourceSender) => sourceSender ! count
+        children(currWorker) ! WordCountTask(currId, text)
+        val nextWorkerIndex = (currWorker + 1) % children.length
+        val newMapping = senderMap + (currId -> context.sender)
+        val nextId = currId + 1
+
+        context.become(withChildren(children, nextWorkerIndex, nextId, newMapping))
+      case WordCountReply(id, count) =>
+        println(s"received result for id: ${id} -> ${count}")
+        val sourceSender: ActorRef = senderMap(id)
+        sourceSender ! count
+        val newMapping = senderMap - id
+
+        context.become(withChildren(children, currWorker, currId, newMapping))
     }
 
   }
@@ -63,9 +75,9 @@ object ChildActors extends App {
     import WordCountMaster._
 
     def receive: Receive = {
-      case WordCountTask(text, originalSender) =>
-        println(s"[${self.path}] processing: $text")
-        sender ! WordCountReply(text.split(' ').length, originalSender)
+      case WordCountTask(id, text) =>
+        println(s"[${self.path}] processing: ${id} -> $text")
+        sender ! WordCountReply(id, text.split(' ').length)
     }
   }
   /* Flow:
@@ -83,10 +95,10 @@ object ChildActors extends App {
     def receive: Receive = {
       case "start" =>
         val wcm = context.actorOf(Props[WordCountMaster], "master")
-        wcm ! Initialize(2)
-        wcm ! "Scala is awesome"
-        wcm ! "Learning akka system is different"
-        wcm ! "End"
+        wcm ! Initialize(3)
+        List("Scala is awesome", "Learning akka system is different", "End", "Hey there!", "")
+            .foreach { wcm ! _ }
+
       case count : Int => println(s"[WC received]: $count")
     }
   }
