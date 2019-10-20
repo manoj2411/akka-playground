@@ -2,13 +2,14 @@ package part4faultolerance
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, PoisonPill, Props}
 
+// ### 4.2
 object ActorLifeCycle extends App {
   case object StartChild
 
   class LifeCycleActor extends Actor with ActorLogging {
     // life cycle methods
     override def preStart(): Unit = log.info("I am starting")
-    override def postStop(): Unit = log.info("I have stopping")
+    override def postStop(): Unit = log.info("I have stopped")
 
     def receive: Receive = {
       case StartChild =>

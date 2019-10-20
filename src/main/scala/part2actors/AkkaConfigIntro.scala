@@ -3,6 +3,7 @@ package part2actors
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 
+// ### 2.6
 object AkkaConfigIntro extends App {
   // config is just a text, described in name = value pairs
   class SimpleActor extends Actor with ActorLogging {

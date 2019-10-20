@@ -2,6 +2,7 @@ package part4faultolerance
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Kill, PoisonPill, Props, Terminated}
 
+// ### 4.1
 object StartingStoppingActors extends App  {
 
   val actorSystem = ActorSystem("startStopActorDemo")

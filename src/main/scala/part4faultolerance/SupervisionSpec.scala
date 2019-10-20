@@ -1,10 +1,11 @@
 package part4faultolerance
 
 import akka.actor.SupervisorStrategy.{Escalate, Restart, Resume, Stop}
-import akka.actor.{Actor, ActorRef, ActorSystem, OneForOneStrategy, Props, Terminated}
-import akka.testkit.{ImplicitSender, TestKit}
+import akka.actor.{Actor, ActorRef, ActorSystem, AllForOneStrategy, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
+import akka.testkit.{EventFilter, ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
+// ### 4.3
 class SupervisionSpec extends TestKit(ActorSystem("SupervisionSpec"))
   with ImplicitSender with WordSpecLike with BeforeAndAfterAll {
 
@@ -81,7 +82,7 @@ class SupervisionSpec extends TestKit(ActorSystem("SupervisionSpec"))
 
   "A kind supervisor" should {
     "not kill children in failures, do restart" in {
-      val superVisor = system.actorOf(Props[NoDeathOnRestartSupervisor])
+      val superVisor = system.actorOf(Props[NoDeathOnRestartSupervisor], "kindSupervisor")
       superVisor ! Props[FussyWordCounter]
       val childRef = expectMsgType[ActorRef]
 
@@ -96,6 +97,29 @@ class SupervisionSpec extends TestKit(ActorSystem("SupervisionSpec"))
 
     }
   }
+
+  "An all-for-one supervisor" should {
+    "apply all-for-one strategy" in {
+      val superVisor = system.actorOf(Props[AllForOneSupervisor], "allForOneSupervisor")
+      superVisor ! Props[FussyWordCounter]
+      val child1 = expectMsgType[ActorRef]
+      superVisor ! Props[FussyWordCounter]
+      val child2 = expectMsgType[ActorRef]
+
+      child2 ! "I love akka!"
+      child2 ! Report
+      expectMsg(3)
+
+      // this asserts that the child actor throws the exception
+      EventFilter[NullPointerException]() intercept {
+        child1 ! ""
+      }
+
+      Thread.sleep(200)
+      child2 ! Report
+      expectMsg(0)
+    }
+  }
 }
 
 
@@ -104,7 +128,7 @@ object SupervisionSpec {
 
   class SuperVisor extends Actor {
     // This is a member that's present in the actor trait
-    override val supervisorStrategy = OneForOneStrategy() {
+    override val supervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
       case _: NullPointerException => Restart
       case _: IllegalArgumentException => Stop
       case _: RuntimeException => Resume
@@ -119,9 +143,20 @@ object SupervisionSpec {
   }
 
   class NoDeathOnRestartSupervisor extends SuperVisor {
+    // on restart I am not killing the child. By default it disposes of all children
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
       // empty
     }
+  }
+
+  class AllForOneSupervisor extends SuperVisor {
+    override val supervisorStrategy:SupervisorStrategy = AllForOneStrategy() {
+      case _: NullPointerException => Restart
+      case _: IllegalArgumentException => Stop
+      case _: RuntimeException => Resume
+      case _: Exception => Escalate
+    }
+
   }
 
   object Report

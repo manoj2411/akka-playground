@@ -3,6 +3,7 @@ package part2actors
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import akka.event.Logging
 
+// ### 2.5
 object ActorLoggingDemo extends App {
 
   class SimpleAcotor extends Actor {
