@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Cancellable, Props, Timers}
 
 import scala.concurrent.duration._
 
+// ### 5.1
 object TimersSchedulers extends App {
 
   /*
@@ -96,6 +97,6 @@ object TimersSchedulers extends App {
   }
 
 
-//  Thread.sleep(2000)
-//  system.terminate
+  Thread.sleep(7000)
+  system.terminate
 }

@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorSystem, Props, Terminated}
 import akka.routing._
 import com.typesafe.config.ConfigFactory
 
+// ### 5.2
 object AkkaRouters extends App {
   /*
     - Routers are extremely useful when you want to delegate or spread work in between
@@ -65,9 +66,24 @@ object AkkaRouters extends App {
       - name must be exact same as the 1 written in config
   */
   val poolMaster2 = actorSystem.actorOf(FromConfig.props(Props[Slave]), "poolMaster2")
+//  for ( i <- (1 to 10)) {
+//    poolMaster2 ! s"message no $i"
+//  }
+
+
+  /* Group router: router with actor created elsewhere */
+
+  val slaves = for (i <- 1 to 5) yield actorSystem.actorOf(Props[Slave], s"slave${i}")
+  val slavePaths = slaves.map(slave => slave.path.toString).toList
+
+  val groupMaster1 = actorSystem.actorOf(RoundRobinGroup(slavePaths).props())
+
   for ( i <- (1 to 10)) {
-    poolMaster2 ! s"message no $i"
+    groupMaster1 ! s"message no $i"
   }
+
+  groupMaster1 ! Broadcast("Hey there!")
+
 
   Thread.sleep(1000)
   actorSystem.terminate()
