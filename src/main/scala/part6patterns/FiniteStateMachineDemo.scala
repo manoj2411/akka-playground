@@ -1,6 +1,6 @@
 package part6patterns
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Cancellable, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Cancellable, FSM, Props}
 import akka.testkit.{ImplicitSender, TestKit}
 import org.scalatest.{BeforeAndAfterAll, WordSpecLike}
 
@@ -177,6 +177,53 @@ class VendingMachine extends Actor with ActorLogging {
       self ! Timeout(originalSender)
     }
 
+}
+
+// Step1: Define states and data of the Actor
+
+//  states
+trait VendingState
+case object Idle extends VendingState
+case object Ready extends VendingState
+case object WaitingForMoney extends VendingState
+
+// Date
+trait VendingData
+case object NotReadyData extends VendingData
+case class ReadyData(prices: Map[String, Int], stock: Map[String, Int]) extends VendingData
+case class WaitingForMoneyData(prices: Map[String, Int],
+                               stock: Map[String, Int],
+                               item: String,
+                               requester: ActorRef,
+                               amount: Int
+                              ) extends VendingData
+
+/*
+   AFM - an extension pf actor with some logic & methods from Akka
+          - The way of thinking in AFM is different, we dont handle messages directly
+          - We dont have a receive handler
+       - When an FSM receives a message it triggers an Event
+       Event(msg, data)
+       - Now we need to handle States & Events, not the messages
+*/
+
+class VendingMachineFSM extends FSM[VendingState, VendingData] {
+
+  // we need to handle States & Events, not the messages
+
+  startWith(Idle, NotReadyData)
+
+  when(Idle) {
+    ???
   }
 
+  when(Ready) {
+    ???
+  }
+
+  when(WaitingForMoney) {
+    ???
+  }
+
+}
 
